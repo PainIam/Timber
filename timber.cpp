@@ -1,5 +1,7 @@
-#include <iostream>
+#include <sstream>
 #include <SFML/Graphics.hpp>
+
+#include <iostream>
 
 int main ()
 {
@@ -76,8 +78,65 @@ int main ()
     // clock
     sf::Clock clock;
 
+    // time bar
+    sf::RectangleShape timeBar;
+    float timeBarIniX = 400.0f;
+    float timeBarIniY = 80.0f;
+    timeBar.setSize(sf::Vector2f(timeBarIniX, timeBarIniY));
+    timeBar.setFillColor(sf::Color::Red);
+    timeBar.setPosition((1920 / 2) - timeBarIniX / 2, 980);
+
+    sf::Time gameTimeTotal;
+    float timeRemaining = 6.0f;
+    float timeBarWidthPerSecond = timeBarIniX / timeRemaining;
+
     // tmp
     int flap = 5;
+    int score = 0;
+
+
+    // text font
+    sf::Font myfont;
+
+    // load font
+    if (!myfont.loadFromFile("./fonts/KOMIKAP_.ttf"))
+    {
+        std::cout << "could not load file\n";
+        exit(-1);
+    }
+
+    // text
+    sf::Text messageText;
+    sf::Text scoreText;
+
+    // set font
+    messageText.setFont(myfont);
+    scoreText.setFont(myfont);
+
+    // assign message
+    messageText.setString("Press Enter to Start");
+    scoreText.setString("Score = 0");
+
+    // size
+    messageText.setCharacterSize(75);
+    scoreText.setCharacterSize(100);
+
+    // color
+    messageText.setFillColor(sf::Color(255, 255, 255));
+    scoreText.setFillColor(sf::Color(255, 255, 255));
+
+    sf::FloatRect textRect = messageText.getLocalBounds();
+
+    // set origin to center
+    messageText.setOrigin(
+        textRect.left + textRect.width / 2.0f,
+        textRect.top + textRect.height / 2.0f
+    
+    );
+
+    // set position
+    messageText.setPosition(1920 / 2.0f, 1080 / 2.0f);
+    scoreText.setPosition(20, 20);
 
     // pause variable
     bool isPaused = true;
@@ -94,11 +153,15 @@ int main ()
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Return) || sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
         {
             isPaused = false;
+            score = 0;
+            timeRemaining = 6.0f;
         }
         
         if (!isPaused)
         {
             sf::Time dt = clock.restart();
+            timeRemaining -= dt.asSeconds(); //remove by real time elapsed
+            timeBar.setSize(sf::Vector2f((timeBarWidthPerSecond * timeRemaining), timeBarIniY));
             if (!beeActive)
             {
                 // How fast is the bee
@@ -174,6 +237,10 @@ int main ()
                 if (spriteCloud3.getPosition().x > 1920)
                     cloud2Active = 0;
             }
+
+            std::stringstream ss;
+            ss <<"score = " << score;
+            scoreText.setString(ss.str());
         }
         
         window.clear();
@@ -183,6 +250,13 @@ int main ()
         // draw tree
         window.draw(spriteTree);
 
+        // draw score
+        window.draw(scoreText);
+
+        // draw message
+        if (isPaused)
+            window.draw(messageText);
+
         // draw bee
         window.draw(spriteBee);
 
@@ -190,6 +264,7 @@ int main ()
         window.draw(spriteCloud1);
         window.draw(spriteCloud2);
         window.draw(spriteCloud3);
+        window.draw(timeBar);
         window.display();
     }
     return 0;
