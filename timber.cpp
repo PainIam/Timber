@@ -157,6 +157,17 @@ int main ()
             timeRemaining = 6.0f;
         }
         
+        if (timeBar.getSize().x < 0.0f)
+        {
+            isPaused = true;
+            messageText.setString("Game Over!");
+
+            sf::FloatRect bounds = messageText.getLocalBounds();
+
+            messageText.setOrigin(bounds.left + bounds.width / 2.0f, bounds.top + bounds.height / 2.0f);
+            messageText.setPosition(1920 / 2.0f, 1080 / 2.0f);
+        }
+        
         if (!isPaused)
         {
             sf::Time dt = clock.restart();
