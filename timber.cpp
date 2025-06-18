@@ -3,6 +3,14 @@
 
 #include <iostream>
 
+void updateBranches(int);
+
+const int NUM_BRANCHES = 6;
+sf::Sprite branches[NUM_BRANCHES];
+
+enum class side {LEFT, RIGHT, NONE};
+side branchPos[NUM_BRANCHES];
+
 int main ()
 {
     sf::VideoMode vm(1366, 768);
@@ -20,6 +28,15 @@ int main ()
     sf::Sprite spriteCloud1;
     sf::Sprite spriteCloud2;
     sf::Sprite spriteCloud3;
+    sf::Texture textureBranch;
+    sf::Texture texturePlayer;
+    sf::Sprite spritePlayer;
+    sf::Texture textureRIP;
+    sf::Sprite spriteRIP;
+    sf::Texture textureAxe;
+    sf::Sprite spriteAxe;
+    sf::Texture textureLog;
+    sf::Sprite spriteLog;
 
 
     // positions
@@ -44,6 +61,12 @@ int main ()
     textureTree.loadFromFile("./graphics/tree.png");
     textureBee.loadFromFile("./graphics/bee.png");
     textureCloud.loadFromFile("./graphics/cloud.png");
+    textureBranch.loadFromFile("graphics/branch.png");
+    texturePlayer.loadFromFile("./graphics/player.png");
+    textureRIP.loadFromFile("./graphics/rip.png");
+    textureAxe.loadFromFile("./graphics/axe.png");
+    textureLog.loadFromFile("graphics/log.png");
+
 
     // set textures to sprites and uniform or initial positions
     spriteBackground.setTexture(textureBackground);
@@ -59,6 +82,29 @@ int main ()
     spriteCloud2.setPosition(sf::Vector2f(CLOUD2_X, CLOUD2_Y));
     spriteCloud3.setPosition(sf::Vector2f(CLOUD3_X, CLOUD3_Y));
 
+    for (int i = 0; i < NUM_BRANCHES; i++) {
+        branches[i].setTexture(textureBranch);
+        branches[i].setPosition(-2000, -2000);
+        // Set the sprite's origin to dead centre
+        // We can then spin it round without changing its position
+        branches[i].setOrigin(220, 20);
+    }
+    spritePlayer.setTexture(texturePlayer);
+    spritePlayer.setPosition(580, 720);
+    spriteRIP.setTexture(textureRIP);
+    spriteRIP.setPosition(600, 860);
+    spriteAxe.setTexture(textureAxe);
+    spriteAxe.setPosition(700, 830);
+    spriteLog.setTexture(textureLog);
+    spriteLog.setPosition(810, 720);
+
+    // line axe with tree
+    const float AXE_POS_X = 700.0f;
+    const float AXE_POS_Y= 1075.0f;
+
+    // player starts on the left
+    side playerSide = side::LEFT;
+
     // is bee moving
     bool beeActive = false;
 
@@ -67,6 +113,9 @@ int main ()
     bool cloud2Active = false;
     bool cloud3Active = false;
 
+    // log status
+    bool logActive = false;
+
     // bee speed
     float beeSpeed = 0.0f;
 
@@ -74,6 +123,10 @@ int main ()
     float cloud1Speed = 0.0f;
     float cloud2Speed = 0.0f;
     float cloud3Speed = 0.0f;
+
+    // log speed
+    float logSpeedX = 1000;
+    float logSpeedY = -1500;
 
     // clock
     sf::Clock clock;
@@ -141,6 +194,9 @@ int main ()
     // pause variable
     bool isPaused = true;
 
+    // Control the player input
+    bool acceptInput = false;
+
     while (window.isOpen())
     {
         sf::Event event;
@@ -155,8 +211,68 @@ int main ()
             isPaused = false;
             score = 0;
             timeRemaining = 6.0f;
+
+            // branches vamos
+            for (int i = 0; i < NUM_BRANCHES; i++)
+            {
+                branchPos[i] = side::NONE;
+            }
+
+            // gravestone is hidden
+            spriteRIP.setPosition(675, 2000);
+
+            // player in position
+            spritePlayer.setPosition(580, 720);
+
+            acceptInput = true;
         }
+
+    
+
+        if (acceptInput)
+        {
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
+            {
+                playerSide = side::RIGHT;
+                score++;
+
+                timeRemaining += (2 / score) + .15;
+                spriteAxe.setPosition(AXE_POS_X, spriteAxe.getPosition().y);
+                spritePlayer.setPosition(1200, 720);
+
+                // update branch
+                updateBranches(score);
+
+                // log to left
+                spriteLog.setPosition(810, 720);
+                logSpeedX = -5000;
+                logActive = true;
+
+                acceptInput = false;
+            }
+
+        }      
         
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
+        {
+            playerSide = side::LEFT;
+            score++;
+
+            timeRemaining += (2 / score) + .15;
+
+            spriteAxe.setPosition(AXE_POS_X, spriteAxe.getPosition().y);
+            spritePlayer.setPosition(580, 720);
+            
+            updateBranches(score);
+
+            // log to right
+            spriteLog.setPosition(810, 720);
+            logSpeedX = 5000;
+            logActive = true;
+
+            acceptInput = false;
+        }
+
         if (timeBar.getSize().x < 0.0f)
         {
             isPaused = true;
@@ -252,6 +368,29 @@ int main ()
             std::stringstream ss;
             ss <<"score = " << score;
             scoreText.setString(ss.str());
+
+            for (int i = 0; i < NUM_BRANCHES; i++)
+            {
+                float height = i * 150;
+
+                if (branchPos[i] == side::LEFT)
+                {
+                    // move sprite to left side
+                    branches[i].setPosition(610, height);
+
+                    // rotate to the other side
+                    branches[i].setRotation(180);
+                } else if (branchPos[i] == side::RIGHT)
+                {
+                    branches[i].setPosition(1330, height);
+
+                    branches[i].setRotation(0);
+                } else 
+                {
+                    branches[i].setPosition(3000, height);
+                }
+            }
+
         }
         
         window.clear();
@@ -261,8 +400,19 @@ int main ()
         // draw tree
         window.draw(spriteTree);
 
+        // Draw the player
+        window.draw(spritePlayer);
+
+        // Draw the axe
+        window.draw(spriteAxe);
+
+        // Draw the flying log
+        window.draw(spriteLog);
+
         // draw score
         window.draw(scoreText);
+
+        window.draw(spriteRIP);
 
         // draw message
         if (isPaused)
@@ -271,12 +421,40 @@ int main ()
         // draw bee
         window.draw(spriteBee);
 
+        
+
         // draw clouds
         window.draw(spriteCloud1);
+
         window.draw(spriteCloud2);
+
         window.draw(spriteCloud3);
+
+        for (int i = 0; i < NUM_BRANCHES; i++)
+            window.draw(branches[i]);
+
         window.draw(timeBar);
+
         window.display();
     }
     return 0;
+}
+
+void updateBranches(int seed)
+{
+    // Move all the branches down one place
+    for (int j = NUM_BRANCHES-1; j > 0; j--) {
+    branchPos[j] = branchPos[j - 1];
+    }
+
+    //left, right or none
+    srand((int)time(0)+seed);
+    int r = (rand() % 5);
+
+    if (r == 0)
+        branchPos[0] = side::LEFT;
+    else if (r == 1)
+        branchPos[0] = side::RIGHT;
+    else
+        branchPos[0] = side::NONE;
 }
