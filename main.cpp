@@ -15,7 +15,7 @@ int main ()
 {
     sf::VideoMode vm(1366, 768);
     sf::View view(sf::FloatRect(0, 0, 1920, 1080));
-    sf::RenderWindow window(vm, "timber square!");
+    sf::RenderWindow window(vm, "timber!!");
     window.setView(view);
 
     sf::Texture textureBackground;
